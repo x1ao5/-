@@ -466,15 +466,16 @@
 /* ===================== 基本設定（你可以改） ===================== */
 /** 一次性密碼清單（字串陣列）。部署時你可改由後端 API 檢查。 */
 const VALID_CODES = [
-  "x5-777", "x5-999", "x5-abc", "x5-1", "x5-2", "x5-3", "x5-4", "x5-5", "x5-6"  // ← 自行新增/修改
+  "x5-1", "x5-2", "x5-3", "x5-4", "x5-5", "x5-6"  // ← 自行新增/修改
 ];
 
 /** 抽獎獎項設定：label=名稱, weight=機率權重, img=中獎彈窗圖片, desc=描述 */
 let PRIZES = [
-  { label: "iPhone",   weight: 1,  img: "https://i.ibb.co/2hVsXbP/iphone.png", desc: "Airdrop 來啦～" },
-  { label: "USDT 100", weight: 0,  img: "https://i.ibb.co/5RVdJb6/usdt.png",   desc: "加菜金100U" },
-  { label: "貼圖包",   weight: 0,  img: "https://i.ibb.co/QmQ02yq/sticker.png", desc: "送你 Meme 貼圖" },
-  { label: "安慰獎",   weight: 12, img: "https://i.ibb.co/dsxdwW5j/image.jpg",  desc: "下次一定中" }
+  { label: "BTC",   weight: 0,  img: "https://i.ibb.co/2hVsXbP/iphone.png", desc: "" },
+  { label: "ETH", weight: 0,  img: "https://i.ibb.co/5RVdJb6/usdt.png",   desc: "" },
+  { label: "SOL",   weight: 0,  img: "https://i.ibb.co/QmQ02yq/sticker.png", desc: "" },
+  { label: "BNB",   weight: 0,  img: "https://i.ibb.co/QmQ02yq/sticker.png", desc: "" },
+  { label: "ADA",   weight: 12, img: "https://i.ibb.co/dsxdwW5j/image.jpg",  desc: "生日快樂" }
 ];
 // 小提示：總機率=權重總和，不需要 100；你只要調整 weight 比例即可。
 
@@ -592,6 +593,7 @@ const ctx = wheelCanvas.getContext("2d");
 
 let currentAngle = 0;
 let spinning = false;
+let drawLocked = false;
 
 function revealWheel(){
   // 1) 取出輪盤 Modal 容器
@@ -606,7 +608,13 @@ function revealWheel(){
   wheelWrap.style.display = "block";
   wheelMask.style.display = "flex";
 
-  // 4) 調整畫布尺寸並重繪
+  // 🔁 重置一次性抽獎狀態（新的密碼＝新的機會）
+  drawLocked = false;
+  spinBtn.disabled = false;
+  spinBtn.classList.remove('done');
+  spinBtn.textContent = '開始抽獎';
+
+  // 4) 畫布調整
   resizeCanvas();
   drawWheel();
 }
@@ -700,7 +708,7 @@ function weightedPick(){
 }
 
 spinBtn.addEventListener("click", ()=>{
-  if (spinning) return;
+  if (spinning || drawLocked) return; // ← 不能重複抽
   spinning = true;
   spinBtn.disabled = true;
 
@@ -741,6 +749,11 @@ spinBtn.addEventListener("click", ()=>{
       currentAngle = startAngle + finalDelta; // 校正
       drawWheel();
       showWin(targetPrize); // 轉完立刻彈
+            // 🔒 鎖死，不能再抽
+      drawLocked = true;
+      spinBtn.disabled = true;
+      spinBtn.classList.add('done');
+      spinBtn.textContent = '抽獎已完成';
     }
   }
   requestAnimationFrame(anim);
@@ -759,8 +772,6 @@ function showWin(prize){
   winDesc.textContent = prize.desc || "";
   winMask.style.display = "flex";
 }
-winOk.addEventListener("click", ()=> winMask.style.display = "none");
-winMask.addEventListener("click", (e)=>{ if(e.target===winMask) winMask.style.display="none"; });
 
 // 關閉輪盤 Modal
 document.getElementById('wheelClose').addEventListener('click', ()=>{
@@ -771,14 +782,3 @@ document.getElementById('wheelClose').addEventListener('click', ()=>{
 document.getElementById('wheelMask').addEventListener('click', (e)=>{
   if(e.target.id === 'wheelMask') e.target.style.display = 'none';
 });
-
-</script>
-
-</body>
-</html>
-
-
-
-
-
-
