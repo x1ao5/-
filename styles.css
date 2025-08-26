@@ -393,25 +393,15 @@
   display: inline-block; /* 讓錨點寬度貼合 h1 */
 }
 
-/* 🎁 位置用 CSS 變數好調整：--y 越負越「往上」、--x 除了 -50% 也可左右微調 */
+/* 🎁 Gift Button 最簡定位 */
 #gift-button {
-  --x: -60%;
-  --y: -1px;                /* 想更靠近標題就改 -5px；想更上面就改 -30px、-40px */
   position: absolute;
   left: 50%;
-  bottom: 100%;              /* 貼在 h1 上邊界 */
-  transform: translate(var(--x), var(--y));
-  font-size: 2rem;
+  transform: translateX(-50%); /* 水平置中 */
+  top: -40px;                  /* 上下調整用，越負越上 */
+  font-size: 32px;             /* 按鈕大小 */
   cursor: pointer;
   z-index: 10;
-  animation: gift-bounce 1s infinite;
-}
-
-/* 只動 Y，不影響 X；用變數避免 transform 被動畫覆蓋 */
-@keyframes gift-bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translate(var(--x), var(--y)); }
-  40% { transform: translate(var(--x), calc(var(--y) - 10px)); }
-  60% { transform: translate(var(--x), calc(var(--y) - 5px)); }
 }
 
 /* Modal */
@@ -477,6 +467,7 @@
   border-top: 18px solid #ff2d2d;   /* 朝上指 */
   filter: drop-shadow(0 0 4px rgba(255,45,45,.7));
 }
+
 
 
 
