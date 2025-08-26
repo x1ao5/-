@@ -1,482 +1,238 @@
-/* Reset */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+// ========= 可調參數 =========
+const PW_PATH = "./passwords.json";              // passwords.json 與 index.html 同層
+const CASE_INSENSITIVE = false;                  // 忽略大小寫就改 true
+const USED_KEY = "x5_gift_used_passwords_v3";    // 本機一次性標記 key
+
+// 轉盤獎項：label / weight / img(可留空)
+// 想自訂圖片就填 img 的網址；不填就顯示文字
+const SEGMENTS = [
+  { label: "btc", weight: 1, img: "" },
+  { label: "🎁 驚喜2", weight: 2, img: "https://i.ibb.co/6NqS9mC/gift.png" },
+  { label: "🍰 驚喜3", weight: 3, img: "https://i.ibb.co/Hqf9QnB/cake.png" },
+  { label: "🔥 驚喜4", weight: 1, img: "" }
+];
+
+const SPIN_SECONDS = 4;   // 動畫秒數
+const MIN_TURNS = 2;      // 最少旋轉圈數
+// ===========================
+
+let validPasswords = [];
+let passwordsReady = false;
+let unlockedPassword = null;   // 成功解鎖的密碼
+let hasSpun = false;
+
+const norm = (s) => (CASE_INSENSITIVE ? String(s).trim().toLowerCase() : String(s).trim());
+
+// ---- 本機一次性紀錄（不顯示、不提供清空按鈕）----
+function getUsedSet() {
+  try {
+    const raw = localStorage.getItem(USED_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(arr);
+  } catch { return new Set(); }
+}
+function addUsedPassword(pw) {
+  const s = getUsedSet();
+  s.add(norm(pw));
+  localStorage.setItem(USED_KEY, JSON.stringify(Array.from(s)));
+}
+function hasUsedPassword(pw) {
+  return getUsedSet().has(norm(pw));
+}
+
+// ---- DOM ----
+const giftBtn = document.getElementById("gift-button");
+const modal = document.getElementById("gift-modal");
+const closeBtn = document.querySelector(".close");
+const checkPasswordBtn = document.getElementById("check-password");
+const passwordInput = document.getElementById("gift-password");
+const passwordError = document.getElementById("password-error");
+const passwordStage = document.getElementById("password-stage");
+const wheelStage = document.getElementById("wheel-stage");
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+const spinBtn = document.getElementById("spin");
+const result = document.getElementById("result");
+
+// 載入提示
+let loadingHint = document.getElementById("pw-loading-hint");
+if (!loadingHint) {
+  loadingHint = document.createElement("p");
+  loadingHint.id = "pw-loading-hint";
+  loadingHint.style.color = "#aaa";
+  loadingHint.style.marginTop = "8px";
+  loadingHint.textContent = "正在載入密碼清單…";
+  passwordStage.appendChild(loadingHint);
+}
+checkPasswordBtn.disabled = true;
+passwordInput.disabled = true;
+
+// ---- 載入 JSON 密碼 ----
+async function loadPasswords() {
+  try {
+    const res = await fetch(`${PW_PATH}?ts=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    validPasswords = Array.isArray(data.validPasswords) ? data.validPasswords : [];
+    passwordsReady = true;
+    checkPasswordBtn.disabled = false;
+    passwordInput.disabled = false;
+    loadingHint.style.display = "none";
+  } catch (err) {
+    console.error("載入 passwords.json 失敗：", err);
+    loadingHint.textContent = "密碼系統暫時不可用，請稍後再試。";
+    if (location.protocol === "file:") {
+      console.warn("用 file:// 開啟會擋 fetch，請用本機伺服器或部署到主機。");
+    }
   }
-  
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background-color: #0a0a0a;
-    color: #ffffff;
-    min-height: 100vh;
-    position: relative;
-    overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
+}
+
+// ---- 事件 ----
+giftBtn.onclick = () => { modal.style.display = "block"; };
+closeBtn.onclick = () => { modal.style.display = "none"; resetModal(); };
+window.onclick = (e) => { if (e.target === modal) { modal.style.display = "none"; } };
+
+checkPasswordBtn.onclick = () => {
+  if (!passwordsReady) {
+    passwordError.textContent = "系統尚未載入完成，請稍候再試。";
+    passwordError.style.display = "block";
+    return;
   }
-
-  .wrapper {
-    flex: 1;
+  const input = passwordInput.value;
+  const ok = validPasswords.some(pw => norm(pw) === norm(input));
+  if (!ok) {
+    passwordError.textContent = "密碼錯誤 ❌";
+    passwordError.style.display = "block";
+    return;
   }
-
-  /* Footer 區塊 */
-  .footer {
-    text-align: center;
-    padding: 16px;
-    background: #111;
-    color: #888;
-    font-size: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  if (hasUsedPassword(input)) {
+    passwordError.textContent = "這組密碼已使用過，不能再次抽獎。";
+    passwordError.style.display = "block";
+    return;
   }
+  unlockedPassword = input;
+  passwordError.style.display = "none";
+  passwordStage.style.display = "none";
+  wheelStage.style.display = "block";
+};
 
-  .divider {
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
-    margin: 0px 0; /* 上下間距 */
+// ---- 權重抽選 ----
+function weightedPick(items) {
+  const total = items.reduce((s,i)=> s + Math.max(0, i.weight||0), 0);
+  if (total <= 0) return 0;
+  let r = Math.random() * total;
+  for (let i=0;i<items.length;i++){
+    const w = Math.max(0, items[i].weight||0);
+    if (r < w) return i;
+    r -= w;
   }
+  return items.length - 1;
+}
 
-  .divider1 {
-    width: 100%;
-    height: 1px;
-    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
-    margin: 40px 0; /* 上下間距 */
+// ---- 圖片預載 ----
+const loadedImgs = new Map();
+function preloadImages() {
+  const urls = SEGMENTS.map(s => s.img).filter(Boolean);
+  const tasks = urls.map(url => new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => { loadedImgs.set(url, img); resolve(); };
+    img.onerror = () => resolve();
+    img.src = url;
+  }));
+  return Promise.all(tasks);
+}
+
+// ---- 繪製輪盤（含圖片/文字）----
+function drawWheel() {
+  const N = SEGMENTS.length;
+  const angle = (2 * Math.PI) / N;
+  const cx = 150, cy = 150, R = 150;
+
+  ctx.clearRect(0,0,canvas.width, canvas.height);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "14px system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, sans-serif";
+
+  for (let i=0;i<N;i++){
+    // 底色
+    ctx.beginPath();
+    ctx.fillStyle = i % 2 === 0 ? "#6C5CE7" : "#00B894";
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R, i*angle, (i+1)*angle);
+    ctx.closePath();
+    ctx.fill();
+
+    // 內容
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(i*angle + angle/2);
+
+    const seg = SEGMENTS[i];
+    if (seg.img && loadedImgs.has(seg.img)) {
+      const img = loadedImgs.get(seg.img);
+      const size = 56;    // 圖片大小可調
+      const r = 95;       // 放置半徑可調
+      // 讓圖片保持正立：再反向旋轉
+      ctx.save();
+      ctx.rotate(- (i*angle + angle/2));
+      ctx.drawImage(img, cx - size/2, cy - r - size/2, size, size);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "#fff";
+      ctx.fillText(seg.label, 80, 0);
+    }
+    ctx.restore();
   }
-  
-  /* Navbar */
-  .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 60px;
-    position: relative;
-    z-index: 2;
-  }
-  
-  .navbar a {
-    color: #ccc;
-    margin: 0 10px;
-    text-decoration: none;
-    font-size: 16px;
-    transition: color 0.2s ease;
-  }
-  
-  .navbar a:hover {
-    color: #fff;
-  }
-  
-  .login-btn {
-    background: none;
-    border: 1px solid #888;
-    color: #fff;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    margin-left: 10px;
-    transition: background 0.3s ease;
-  }
-  
-  .login-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  /* Hero Section */
-  .hero {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 120px 20px;
-    text-align: center;
-    z-index: 2;
-    position: relative;
-  }
-  
-  .hero-content h1 {
-    font-size: 48px;
-    margin-bottom: 20px;
-    background: linear-gradient(to right, #646363, #eef1f1);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  
-  .hero-content p {
-    font-size: 20px;
-    color: #ccc;
-    margin-bottom: 30px;
-  }
-  
-  .cta-btn {
-    background: linear-gradient(to right, #111111, #626464);
-    border: none;
-    color: #fff;
-    padding: 12px 28px;
-    font-size: 16px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-  }
-  
-  .cta-btn:hover {
-    transform: scale(1.05);
-  }
-  
-  /* 漸層光暈 */
-  .glow {
-    position: absolute;
-    top: 0;
-    width: 200px;
-    height: 100vh;
-    filter: blur(80px);
-    z-index: 0;
-  }
-  
-  .left-glow {
-    left: -120px;
-    background: radial-gradient(circle, rgba(252, 252, 252, 0.3), transparent);
-  }
-  
-  .right-glow {
-    right: -120px;
-    background: radial-gradient(circle, rgba(247, 248, 248, 0.3), transparent);
-  }
-
-  /* scroll-wrapper */
-.scroll-wrapper {
-  overflow: hidden;
-  white-space: nowrap;
-  background: linear-gradient(to top, #0d0d0d, #111);
-  padding: 40px 0;
-  position: relative;
-  margin-top: 425px;
 }
 
-.scroll-track {
-  display: flex;
-  gap: 20px;
+function resetWheelRotation() {
+  canvas.style.transition = "none";
+  canvas.style.transform = "rotate(0deg)";
+  hasSpun = false;
+  unlockedPassword = null;
+  result.textContent = "";
 }
 
-.profile-card {
-  width: 401.75px;
-  height: 154px;
-  display: flex;
-  background: linear-gradient(135deg, #1f1f1f, #2a2a2a);
-  border: 1px solid #333;
-  border-radius: 16px;
-  overflow: hidden;
-  flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.4);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+// ---- 旋轉並精準停在中獎區 ----
+spinBtn.onclick = () => {
+  if (hasSpun) return;
+  if (!unlockedPassword) return;
+
+  spinBtn.disabled = true;
+  hasSpun = true;
+
+  const index = weightedPick(SEGMENTS);
+  const N = SEGMENTS.length;
+  const segDeg = 360 / N;
+  const targetCenter = (index + 0.5) * segDeg;
+  const jitter = (Math.random() - 0.5) * (segDeg * 0.6);
+  const finalTarget = targetCenter + jitter;
+  const extraTurns = MIN_TURNS + Math.floor(Math.random()*2); // 2~3圈
+  const finalDeg = extraTurns * 360 + finalTarget;
+
+  canvas.style.transition = `transform ${SPIN_SECONDS}s ease-out`;
+  canvas.style.transform = `rotate(${finalDeg}deg)`;
+
+  setTimeout(() => {
+    result.innerText = "結果: " + SEGMENTS[index].label;
+    // 一次性：標記這組密碼已使用
+    addUsedPassword(unlockedPassword);
+  }, SPIN_SECONDS*1000);
+};
+
+function resetModal() {
+  passwordInput.value = "";
+  passwordStage.style.display = "block";
+  wheelStage.style.display = "none";
+  passwordError.style.display = "none";
+  spinBtn.disabled = false;
+  resetWheelRotation();
 }
 
-.profile-card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 0 24px rgba(0, 0, 255, 0.5);
-}
-
-.avatar {
-  width: 152px;
-  height: 152px;
-  flex-shrink: 0;
-}
-
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-}
-
-.profile-info {
-  width: 247.75px;
-  height: 100%;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  color: white;
-}
-
-.profile-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.profile-header .name {
-  font-size: 1.2rem;
-  font-weight: bold;
-  margin: 0;
-}
-
-.profile-header .tag {
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  border-radius: 9999px;
-  background-color: #1e1e1e;
-  border: 1px solid #666;
-  color: #ccc;
-  white-space: nowrap;
-}
-
-.social-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.social-button {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #2a2a2a;
-  border-radius: 8px;
-  padding: 8px;
-  transition: background-color 0.3s, transform 0.3s;
-}
-
-.social-button:hover {
-  background-color: #3a3a3a;
-  transform: translateY(-2px);
-}
-
-.social-button img {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-}
-
-@keyframes scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.gradient-fade {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 80px;
-  pointer-events: none;
-  z-index: 10;
-}
-
-.gradient-fade.left {
-  left: 0;
-  background: linear-gradient(to right, #0d0d0d, transparent);
-}
-
-.gradient-fade.right {
-  right: 0;
-  background: linear-gradient(to left, #0d0d0d, transparent);
-}
-
-/* trusted-section */
-.trusted-section {
-  max-width: 1048px;
-  margin: 80px auto 100px;
-  padding: 0 24px;
-  text-align: center;
-}
-
-.divider-line {
-  height: 1px;
-  width: 100%;
-  background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
-  margin-bottom: 48px;
-}
-
-.trusted-title {
-  font-size: 1rem;
-  line-height: 1.5;
-  color: rgba(255,255,255,0.7);
-  margin-bottom: 36px;
-}
-
-.trusted-logos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-  gap: 24px;
-  justify-content: center;
-  align-items: center;
-  max-width: 730px;
-  margin: 0 auto;
-}
-
-.trusted-logos img {
-  max-width: 100%;
-  transform: none;
-  transition: none;
-  opacity: 1;
-  cursor: default;
-}
-
-.bottom-line {
-  margin-top: 50px;
-}
-
-/* faq-section */
-.faq-section {
-  max-width: 800px;
-  margin: 100px auto;
-  padding: 0 20px;
-  color: #fff;
-  background: linear-gradient(to right, #111, #0d0d0d);
-  border: 1px solid #333;
-  border-radius: 16px;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
-}
-
-.faq-title {
-  text-align: center;
-  font-size: 1.8rem;
-  margin: 40px 0 20px;
-  font-weight: bold;
-}
-
-.faq-item {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 20px 0;
-}
-
-.faq-item:first-child {
-  border-top: none;
-}
-
-.faq-question {
-  display: block;
-  font-size: 1.1rem;
-  cursor: pointer;
-  position: relative;
-  padding-right: 30px;
-}
-
-.faq-question::after {
-  content: "+";
-  position: absolute;
-  right: 0;
-  font-size: 1.2rem;
-  color: #888;
-  transition: transform 0.3s;
-}
-
-.faq-item input[type="checkbox"] {
-  display: none;
-}
-
-.faq-item input[type="checkbox"]:checked + .faq-question::after {
-  transform: rotate(45deg);
-}
-
-.faq-answer {
-  max-height: 0;
-  overflow: hidden;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.95rem;
-  transition: max-height 0.4s ease;
-}
-
-.faq-item input[type="checkbox"]:checked ~ .faq-answer {
-  max-height: 200px;
-  margin-top: 10px;
-}
-
-/* 🎁 Gift Button */
-#gift-button {
-  position: fixed;
-  bottom: 710px;
-  right:885px;
-  font-size: 2rem;
-  cursor: pointer;
-  animation: bounce 1s infinite;
-  z-index: 1000;
-}
-
-/* 跳動動畫 */
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-10px); }
-  60% { transform: translateY(-5px); }
-}
-
-/* Modal */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 2000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0,0,0,0.6);
-}
-
-.modal-content {
-  background: #111;
-  color: white;
-  margin: 15% auto;
-  padding: 20px;
-  border-radius: 12px;
-  width: 350px;
-  text-align: center;
-  position: relative;
-}
-
-.close {
-  position: absolute;
-  right: 15px;
-  top: 10px;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.wheel-wrap {
-  position: relative;
-  width: 300px;
-  height: 300px;
-  margin: 0 auto 12px;
-}
-
-/* 指針壓在輪盤上：把 top 往下推一點，剛好頂在圓邊上 */
-.wheel-pointer {
-  position: absolute;
-  top: 4px;              /* 往下壓進輪盤邊緣 */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-bottom: 18px solid #ffd54f;  /* 指針顏色 */
-  filter: drop-shadow(0 0 4px rgba(0,0,0,.6));
-  z-index: 2;
-}
-
-/* 若改用圖片指針：把上面三角形拿掉，放一張小箭頭圖即可 */
-.wheel-pointer img {
-  display: block;
-  width: 22px;          /* 你可以調整大小 */
-  height: auto;
-  transform: translateY(-4px); /* 微調貼合圓邊 */
-}
-
-.wheel-admin {
-  margin-top: 8px;
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-
-.wheel-admin button {
-  font-size: 12px;
-  padding: 6px 10px;
-  background: #1f2937;
-  color: #fff;
-  border: 1px solid #374151;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.wheel-admin button:hover { filter: brightness(1.1); }
-
-
+// ---- 啟動 ----
+(async function init(){
+  await preloadImages();
+  drawWheel();
+  loadPasswords();
+})();
