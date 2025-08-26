@@ -430,3 +430,23 @@
   font-size: 20px;
   cursor: pointer;
 }
+
+.wheel-wrap {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin: 0 auto 12px;
+}
+
+.wheel-pointer {
+  position: absolute;
+  top: -8px; /* 指針在最上方 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 16px solid #ffd54f; /* 指針顏色 */
+  filter: drop-shadow(0 0 4px rgba(0,0,0,.6));
+}
