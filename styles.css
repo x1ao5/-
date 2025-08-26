@@ -391,8 +391,8 @@
 #gift-button {
   position: absolute;
   left: 50%;
-  transform: translateX(-50%) translateY(-8px); /* 微調垂直距離 */
-  top: calc(0px - 48px); /* 在標題上方 ~28px，你可改 */
+  bottom: 100%;                  /* 卡在 h1 上邊界 */
+  transform: translateX(-50%) translateY(-12px); /* 往上留一點空隙 */
   font-size: 2rem;
   cursor: pointer;
   animation: bounce 1s infinite;
@@ -469,4 +469,5 @@
   border-top: 18px solid #ff2d2d;   /* 朝上指 */
   filter: drop-shadow(0 0 4px rgba(255,45,45,.7));
 }
+
 
