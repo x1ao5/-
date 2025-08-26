@@ -518,3 +518,10 @@
 
 /* 避免畫布區被外層樣式影響字距/行高 */
 .wheel-canvas { line-height: 1; }
+
+.spin-btn[disabled],
+.spin-btn.done {
+  opacity: .6;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
