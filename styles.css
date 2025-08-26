@@ -387,19 +387,12 @@
   position: relative;
 }
 
-/* h1 + 按鈕的錨點容器 */
-.hero-title {
-  position: relative;
-  display: inline-block; /* 讓錨點寬度貼合 h1 */
-}
-
-/* 🎁 Gift Button 最簡定位 */
 #gift-button {
   position: absolute;
   left: 50%;
-  transform: translateX(-57%); /* 水平置中 */
-  top: -50px;                  /* 上下調整用，越負越上 */
-  font-size: 32px;             /* 按鈕大小 */
+  top: 0;                     /* 先大概放在最上面 */
+  transform: translate(-50%, -120%); 
+  font-size: 32px;
   cursor: pointer;
   z-index: 10;
 }
@@ -467,3 +460,4 @@
   border-top: 18px solid #ff2d2d;   /* 朝上指 */
   filter: drop-shadow(0 0 4px rgba(255,45,45,.7));
 }
+
