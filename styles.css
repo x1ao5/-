@@ -438,15 +438,45 @@
   margin: 0 auto 12px;
 }
 
+/* 指針壓在輪盤上：把 top 往下推一點，剛好頂在圓邊上 */
 .wheel-pointer {
   position: absolute;
-  top: -8px; /* 指針在最上方 */
+  top: 4px;              /* 往下壓進輪盤邊緣 */
   left: 50%;
   transform: translateX(-50%);
   width: 0;
   height: 0;
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
-  border-bottom: 16px solid #ffd54f; /* 指針顏色 */
+  border-bottom: 18px solid #ffd54f;  /* 指針顏色 */
   filter: drop-shadow(0 0 4px rgba(0,0,0,.6));
+  z-index: 2;
 }
+
+/* 若改用圖片指針：把上面三角形拿掉，放一張小箭頭圖即可 */
+.wheel-pointer img {
+  display: block;
+  width: 22px;          /* 你可以調整大小 */
+  height: auto;
+  transform: translateY(-4px); /* 微調貼合圓邊 */
+}
+
+.wheel-admin {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.wheel-admin button {
+  font-size: 12px;
+  padding: 6px 10px;
+  background: #1f2937;
+  color: #fff;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.wheel-admin button:hover { filter: brightness(1.1); }
+
+
