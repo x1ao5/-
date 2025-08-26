@@ -397,8 +397,8 @@
 #gift-button {
   position: absolute;
   left: 50%;
-  transform: translateX(-50%); /* 水平置中 */
-  top: -40px;                  /* 上下調整用，越負越上 */
+  transform: translateX(-57%); /* 水平置中 */
+  top: -50px;                  /* 上下調整用，越負越上 */
   font-size: 32px;             /* 按鈕大小 */
   cursor: pointer;
   z-index: 10;
@@ -467,10 +467,3 @@
   border-top: 18px solid #ff2d2d;   /* 朝上指 */
   filter: drop-shadow(0 0 4px rgba(255,45,45,.7));
 }
-
-
-
-
-
-
-
