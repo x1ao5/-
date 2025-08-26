@@ -6,14 +6,14 @@ const USED_KEY = "x5_gift_used_passwords_v3";    // 本機一次性標記 key
 // 轉盤獎項：label / weight / img(可留空)
 // 想自訂圖片就填 img 的網址；不填就顯示文字
 const SEGMENTS = [
-  { label: "🎉 驚喜1", weight: 1, img: "" },
-  { label: "🎁 驚喜2", weight: 2, img: "https://i.ibb.co/6NqS9mC/gift.png" },
-  { label: "🍰 驚喜3", weight: 3, img: "https://i.ibb.co/Hqf9QnB/cake.png" },
-  { label: "🔥 驚喜4", weight: 1, img: "" }
+  { label: "BTC", weight: 0, img: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=040" },
+  { label: "ETH", weight: 0, img: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=040" },
+  { label: "SOL", weight: 0, img: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=040" },
+  { label: "ADA", weight: 3, img: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=040" }
 ];
 
-const SPIN_SECONDS = 4;   // 動畫秒數
-const MIN_TURNS = 2;      // 最少旋轉圈數
+const SPIN_SECONDS = 6;   // 動畫秒數
+const MIN_TURNS = 8;      // 最少旋轉圈數
 // ===========================
 
 let validPasswords = [];
@@ -236,4 +236,5 @@ function resetModal() {
   drawWheel();
   loadPasswords();
 })();
+
 
