@@ -441,14 +441,14 @@
 /* 指針壓在輪盤上：把 top 往下推一點，剛好頂在圓邊上 */
 .wheel-pointer {
   position: absolute;
-  top: 4px;              /* 往下壓進輪盤邊緣 */
+  bottom: -8px;  /* 放在輪盤下方 */
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) rotate(180deg); /* 朝上指 */
   width: 0;
   height: 0;
   border-left: 10px solid transparent;
   border-right: 10px solid transparent;
-  border-bottom: 18px solid #ffd54f;  /* 指針顏色 */
+  border-top: 18px solid #ffd54f;  /* 改成上方三角形 */
   filter: drop-shadow(0 0 4px rgba(0,0,0,.6));
   z-index: 2;
 }
@@ -478,3 +478,4 @@
   cursor: pointer;
 }
 .wheel-admin button:hover { filter: brightness(1.1); }
+
