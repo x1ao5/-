@@ -385,7 +385,7 @@
 /* 🎁 Gift Button：固定在頁面位置，不跟著視窗滾動 */
 #gift-button {
   position: absolute;      /* 改：頁面定位 */
-  bottom: 710px;           /* 你給的座標直接沿用 */
+  bottom: 110px;           /* 你給的座標直接沿用 */
   right: 885px;
   font-size: 2rem;
   cursor: pointer;
@@ -463,3 +463,4 @@
   border-top: 18px solid #ff2d2d;   /* 朝上指 */
   filter: drop-shadow(0 0 4px rgba(255,45,45,.7));
 }
+
