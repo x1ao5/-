@@ -382,11 +382,11 @@
   margin-top: 10px;
 }
 
-/* 🎁 Gift Button */
+/* 🎁 Gift Button：固定在頁面位置，不跟著視窗滾動 */
 #gift-button {
-  position: fixed;
-  bottom: 710px;
-  right:885px;
+  position: absolute;      /* 改：頁面定位 */
+  bottom: 710px;           /* 你給的座標直接沿用 */
+  right: 885px;
   font-size: 2rem;
   cursor: pointer;
   animation: bounce 1s infinite;
@@ -405,16 +405,14 @@
   display: none;
   position: fixed;
   z-index: 2000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
   background-color: rgba(0,0,0,0.6);
 }
 
 .modal-content {
   background: #111;
-  color: white;
+  color: #fff;
   margin: 15% auto;
   padding: 20px;
   border-radius: 12px;
@@ -425,12 +423,12 @@
 
 .close {
   position: absolute;
-  right: 15px;
-  top: 10px;
+  right: 15px; top: 10px;
   font-size: 20px;
   cursor: pointer;
 }
 
+/* 輪盤容器 */
 .wheel-wrap {
   position: relative;
   width: 300px;
@@ -438,44 +436,30 @@
   margin: 0 auto 12px;
 }
 
-/* 指針壓在輪盤上：把 top 往下推一點，剛好頂在圓邊上 */
+/* 🔴 長紅色指針（在下方、往上指，超明確） */
 .wheel-pointer {
   position: absolute;
-  bottom: -8px;  /* 放在輪盤下方 */
+  bottom: -2px;                 /* 壓在圓的下緣 */
   left: 50%;
-  transform: translateX(-50%) rotate(180deg); /* 朝上指 */
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 18px solid #ffd54f;  /* 改成上方三角形 */
-  filter: drop-shadow(0 0 4px rgba(0,0,0,.6));
+  transform: translateX(-50%);  /* 置中 */
+  width: 4px;
+  height: 98px;                 /* 指針的長度，想更長就加大 */
+  background: #ff2d2d;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(255, 45, 45, 0.7);
   z-index: 2;
 }
 
-/* 若改用圖片指針：把上面三角形拿掉，放一張小箭頭圖即可 */
-.wheel-pointer img {
-  display: block;
-  width: 22px;          /* 你可以調整大小 */
-  height: auto;
-  transform: translateY(-4px); /* 微調貼合圓邊 */
+/* 指針尖端（三角形，朝上） */
+.wheel-pointer::after {
+  content: "";
+  position: absolute;
+  top: -16px;                   /* 三角形貼在桿子上端 */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 18px solid #ff2d2d;   /* 朝上指 */
+  filter: drop-shadow(0 0 4px rgba(255,45,45,.7));
 }
-
-.wheel-admin {
-  margin-top: 8px;
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-
-.wheel-admin button {
-  font-size: 12px;
-  padding: 6px 10px;
-  background: #1f2937;
-  color: #fff;
-  border: 1px solid #374151;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.wheel-admin button:hover { filter: brightness(1.1); }
-
