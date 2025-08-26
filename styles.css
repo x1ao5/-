@@ -387,14 +387,21 @@
   position: relative;
 }
 
+/* 🎁 固定版：不跟著滾動走 */
 #gift-button {
-  position: absolute;
-  left: 50%;
-  top: 0;                     /* 先大概放在最上面 */
-  transform: translate(-70%, -120%); 
+  position: fixed;        /* 關鍵：固定在視窗 */
+  left: 70%;              /* 先置中 */
+  transform: translateX(-50%);  /* 真的水平置中 */
+  top: 140px;             /* 距離視窗上緣多少，自行微調 */
   font-size: 32px;
+  z-index: 9999;          /* 壓在最上面，避免被蓋住 */
   cursor: pointer;
-  z-index: 10;
+  animation: gift-pop 1s infinite;
+}
+@keyframes gift-pop {
+  0%,20%,50%,80%,100% { transform: translateX(-50%) translateY(0); }
+  40% { transform: translateX(-50%) translateY(-8px); }
+  60% { transform: translateX(-50%) translateY(-4px); }
 }
 
 /* Modal */
@@ -460,5 +467,6 @@
   border-top: 18px solid #ff2d2d;   /* 朝上指 */
   filter: drop-shadow(0 0 4px rgba(255,45,45,.7));
 }
+
 
 
