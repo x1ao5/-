@@ -205,7 +205,7 @@ spinBtn.onclick = () => {
   const index = weightedPick(SEGMENTS);
   const N = SEGMENTS.length;
   const segDeg = 360 / N;
-  const targetCenter = (index + 0.5) * segDeg;
+  const targetCenter = (index + 0.5) * segDeg + 180;
   const jitter = (Math.random() - 0.5) * (segDeg * 0.6);
   const finalTarget = targetCenter + jitter;
   const extraTurns = MIN_TURNS + Math.floor(Math.random()*2); // 2~3圈
@@ -236,3 +236,4 @@ function resetModal() {
   drawWheel();
   loadPasswords();
 })();
+
