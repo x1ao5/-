@@ -395,8 +395,8 @@
 
 /* 🎁 位置用 CSS 變數好調整：--y 越負越「往上」、--x 除了 -50% 也可左右微調 */
 #gift-button {
-  --x: -50%;
-  --y: -12px;                /* 想更靠近標題就改 -5px；想更上面就改 -30px、-40px */
+  --x: -60%;
+  --y: -1px;                /* 想更靠近標題就改 -5px；想更上面就改 -30px、-40px */
   position: absolute;
   left: 50%;
   bottom: 100%;              /* 貼在 h1 上邊界 */
@@ -477,6 +477,7 @@
   border-top: 18px solid #ff2d2d;   /* 朝上指 */
   filter: drop-shadow(0 0 4px rgba(255,45,45,.7));
 }
+
 
 
 
