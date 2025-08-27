@@ -594,6 +594,7 @@ const ctx = wheelCanvas.getContext("2d");
 let currentAngle = 0;
 let spinning = false;
 let drawLocked = false;
+let rafId = null; // 記錄目前的動畫 id
 
 const deg  = d => d * Math.PI / 180;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -610,6 +611,19 @@ function revealWheel(){
   // 3) 顯示輪盤並打開 Modal
   wheelWrap.style.display = "block";
   wheelMask.style.display = "flex";
+
+  // --- 每次解鎖前，先把上一輪的狀態清乾淨 ---
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; } // 停掉殘留動畫
+  spinning = false;          // 確保不是「半路以為還在轉」
+  drawLocked = false;        // 你已經有 reset，但再保險
+  spinBtn.disabled = false;
+  spinBtn.classList.remove('done');
+  spinBtn.textContent = '開始抽獎';
+
+  // 把角度歸零（或最少 mod 回 0~2π，避免角度越累越大）
+  const twoPI = Math.PI * 2;
+  currentAngle = ((currentAngle % twoPI) + twoPI) % twoPI; // 若你想直接歸零：currentAngle = 0;
+
 
   // 🔁 重置一次性抽獎狀態（新的密碼＝新的機會）
   drawLocked = false;
@@ -751,7 +765,7 @@ spinBtn.addEventListener("click", ()=>{
     spinBtn.classList.add('done');
     spinBtn.textContent = '抽獎已完成';
   }
-  requestAnimationFrame(anim);
+  rafId = requestAnimationFrame(anim);
 });
 
 /* ===================== 中獎彈窗 ===================== */
