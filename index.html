@@ -466,7 +466,7 @@
 /* ===================== 基本設定（你可以改） ===================== */
 /** 一次性密碼清單（字串陣列）。部署時你可改由後端 API 檢查。 */
 const VALID_CODES = [
-  "x5-1", "x5-2", "x5-3", "x5-4", "x5-5", "x5-6"  // ← 自行新增/修改
+  "1", "2", "3", "4", "5", "6"  // ← 自行新增/修改
 ];
 
 /** 抽獎獎項設定：label=名稱, weight=機率權重, img=中獎彈窗圖片, desc=描述 */
@@ -782,3 +782,4 @@ document.getElementById('wheelClose').addEventListener('click', ()=>{
 document.getElementById('wheelMask').addEventListener('click', (e)=>{
   if(e.target.id === 'wheelMask') e.target.style.display = 'none';
 });
+
